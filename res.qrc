@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/">
+        <file>res/lishijilu.png</file>
+        <file>res/shanchu.png</file>
+        <file>res/shangyibu.png</file>
+        <file>res/shezhi.png</file>
+        <file>res/sousuo.png</file>
+        <file>res/tvbox主页.jpg</file>
+        <file>res/live.png</file>
+    </qresource>
+</RCC>
