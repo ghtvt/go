@@ -13,6 +13,7 @@
 #include <fstream>
 #include "tools.h"
 #include "vn.h"
+#include "mpvwidget.h"
 
 using json =nlohmann::json;
 using namespace std;

@@ -3,12 +3,21 @@
 #include <QDebug>
 #include "tools.h"
 #include <QPixmap>
+#include "mpvwidget.h"
 
 Detail::Detail(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::Detail)
 {
     ui->setupUi(this);
+     m_mpv = new MpvWidget(ui->mpv_win);
+     QHBoxLayout *hl = new QHBoxLayout();
+    hl->addWidget(m_mpv);
+    QLabel *a=new QLabel();
+    a->setText("adasdasd");
+    hl->addWidget(a);
+    ui->mpv_win->setLayout(hl);
+    m_mpv->command(QStringList() << "loadfile" <<  "/home/asters/下载/localsend/test.mp4");
 }
 Detail::Detail(std::string vod_id,std::string vod_name,std::string vod_pic,std::string vod_remarks,QWidget *parent) :
     QWidget(parent),

@@ -2,6 +2,7 @@
 #define DETAIL_H
 
 #include <QWidget>
+#include "mpvwidget.h"
 
 namespace Ui {
 class Detail;
@@ -26,6 +27,7 @@ public:
 
 private:
     Ui::Detail *ui;
+    MpvWidget *m_mpv;
     std::string vod_id;
     std::string vod_name;
     std::string vod_pic;
