@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/tidwall/gjson"
+
 	"github.com/robertkrimen/otto"
 )
 
@@ -142,6 +144,33 @@ func jsFunc(js_str string) {
 	vm.Run(js_str)
 }
 
+func CheckHomeContent(vm *otto.Otto) string {
+	//运行homeContent
+	result, err := vm.Run("homeContent()")
+	if err != nil {
+		fmt.Println("运行homeContent时出错！")
+		fmt.Println(err)
+
+		os.Exit(0)
+	}
+	res, err := result.ToString()
+	if res == "" {
+		fmt.Println("homeContent返回为空")
+		os.Exit(0)
+	}
+
+	if err != nil {
+		fmt.Println("运行homeContent后转换string时出错！")
+		fmt.Println(err)
+		os.Exit(0)
+	}
+	jstr := string(res)
+	classes := gjson.Get(jstr, "class")
+	fmt.Println(classes)
+
+	return res
+
+}
 func main() {
 	js := os.Args[1]
 	js_func := ""
@@ -163,9 +192,11 @@ func main() {
 		return
 	}
 	js_str := string(js_con)
+	//js初始化
 	_, err = vm.Run(js_str)
 	if err != nil {
 		fmt.Println(err)
 	}
+	CheckHomeContent(vm)
 
 }
