@@ -66,6 +66,9 @@ function categoryContent(tid, pg) {
   return re;
 }
 function detailContent(ids) {
+  var result = {};
+  var info = {};
+  var list_info = [];
   var url = siteUrl + ids;
   res = go_RequestClient(url, "get", getHeaders(), "");
   body = res.body;
@@ -99,8 +102,19 @@ function detailContent(ids) {
   }
   vod_play_url = play_from_array.join("$$$");
 
+  console.log(vod_play_url);
   //info
   v_info_el = go_FindHtml(body, ".video-info");
-  vod_name = go_FindText(v_info_el, "page-title");
+  vod_name = go_FindText(v_info_el, ".page-title");
+  vod_pic = go_FindAttr(v_info_el, ".lazyload", "data-src");
+  vod_name = go_FindText(v_info_el, ".tag-link");
+  var vod_year = "年份";
+  var vod_year = "年份";
+  var vod_area = "地区";
+  var vod_remarks = "提示信息";
+  var vod_actor = "主演";
+  var vod_director = "导演";
+  var vod_content = "简介";
+
   console.log(vod_name);
 }
