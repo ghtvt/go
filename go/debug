@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/asters1/goquery"
 	"github.com/tidwall/gjson"
 
 	"github.com/robertkrimen/otto"
@@ -114,7 +115,11 @@ func JsInit() *otto.Otto {
 		for i, j := range HeaderMap {
 			requset.Header.Set(i, j)
 		}
-		resp, _ := client.Do(requset)
+		resp, err := client.Do(requset)
+		if err != nil {
+			fmt.Println("请求发送失败")
+			os.Exit(0)
+		}
 		body_bit, _ := ioutil.ReadAll(resp.Body)
 		headerMap := resp.Header
 		jsonByte, err := json.Marshal(headerMap)
@@ -136,6 +141,75 @@ func JsInit() *otto.Otto {
 		return result
 	})
 
+	vm.Set("go_FindHtml", func(call otto.FunctionCall) otto.Value {
+		HTML, _ := call.Argument(0).ToString()
+		CSS, _ := call.Argument(1).ToString()
+
+		// 加载 HTML document对象
+		doc, err := goquery.NewDocumentFromReader(strings.NewReader(HTML))
+		if err != nil {
+			fmt.Println("加载HTML失败")
+			os.Exit(0)
+		}
+		var res []string
+		// Find the review items
+		doc.Find(CSS).Each(func(i int, s *goquery.Selection) {
+			// For each item found, get the band and title
+			value, err := s.String()
+
+			if err != nil {
+				fmt.Println("获取Html列表出错")
+			}
+
+			res = append(res, value)
+		})
+
+		result, _ := vm.ToValue(res)
+		return result
+	})
+	vm.Set("go_FindText", func(call otto.FunctionCall) otto.Value {
+		HTML, _ := call.Argument(0).ToString()
+		CSS, _ := call.Argument(1).ToString()
+
+		// 加载 HTML document对象
+		doc, err := goquery.NewDocumentFromReader(strings.NewReader(HTML))
+		if err != nil {
+			fmt.Println("加载节点失败")
+			os.Exit(0)
+		}
+		// Find the review items
+		res := doc.Find(CSS).Text()
+		result, _ := vm.ToValue(res)
+		return result
+	})
+	vm.Set("go_FindAttr", func(call otto.FunctionCall) otto.Value {
+		HTML, _ := call.Argument(0).ToString()
+		CSS, _ := call.Argument(1).ToString()
+		KEY, _ := call.Argument(2).ToString()
+
+		// 加载 HTML document对象
+		doc, err := goquery.NewDocumentFromReader(strings.NewReader(HTML))
+		if err != nil {
+			fmt.Println("加载节点失败")
+			os.Exit(0)
+		}
+		// Find the review items
+		// For each item found, get the band and title
+		res := ""
+		bl := true
+		if CSS == "" {
+			res, bl = doc.Attr(KEY)
+
+		} else {
+			res, bl = doc.Find(CSS).Attr(KEY)
+		}
+
+		if !bl {
+			fmt.Println("没有获取到" + KEY)
+		}
+		result, _ := vm.ToValue(res)
+		return result
+	})
 	return vm
 }
 
@@ -144,7 +218,38 @@ func jsFunc(js_str string) {
 	vm.Run(js_str)
 }
 
+func Jsoninit() *otto.Otto {
+
+	js := os.Args[1]
+	js_func := ""
+	vm := JsInit()
+	if len(os.Args) > 2 {
+		js_func = os.Args[2]
+		js_func_con, err := ioutil.ReadFile(js_func)
+		if err != nil {
+			fmt.Println("打开文件[ " + js_func + " ]失败！")
+			os.Exit(0)
+		}
+		js_func_str := string(js_func_con)
+		jsFunc(js_func_str)
+
+	}
+	js_con, err := ioutil.ReadFile(js)
+	if err != nil {
+		fmt.Println("打开文件[ " + js + " ]失败！")
+		os.Exit(0)
+	}
+	js_str := string(js_con)
+	//js初始化
+	_, err = vm.Run(js_str)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return vm
+}
 func CheckHomeContent(vm *otto.Otto) string {
+	fmt.Print("==========homeContent:=======\n\n")
+
 	//运行homeContent
 	result, err := vm.Run("homeContent()")
 	if err != nil {
@@ -153,8 +258,8 @@ func CheckHomeContent(vm *otto.Otto) string {
 
 		os.Exit(0)
 	}
-	res, err := result.ToString()
-	if res == "" {
+	resjson, err := result.ToString()
+	if resjson == "" {
 		fmt.Println("homeContent返回为空")
 		os.Exit(0)
 	}
@@ -164,39 +269,119 @@ func CheckHomeContent(vm *otto.Otto) string {
 		fmt.Println(err)
 		os.Exit(0)
 	}
-	jstr := string(res)
-	classes := gjson.Get(jstr, "class")
-	fmt.Println(classes)
+	jstr := string(resjson)
+	//	fmt.Println(jstr)
+	classes := gjson.Get(jstr, "class").Array()
+	//	fmt.Println(res)
+	for i := 0; i < len(classes); i++ {
+
+		fmt.Print(classes[i].Get("type_name"))
+		fmt.Print("[" + classes[i].Get("type_id").String() + "]\n\n")
+
+	}
+
+	return jstr
+
+}
+func CheckCategoryContent(tid string, pg int, vm *otto.Otto) []string {
+
+	fmt.Print("==========categoryContent:=======\n\n")
+	page := strconv.Itoa(pg)
+	result, err := vm.Run("categoryContent(\"" + tid + "\"," + page + ")")
+	if err != nil {
+		fmt.Println("运行categoryContent时出错！")
+		fmt.Println(err)
+
+		os.Exit(0)
+	}
+	resjson, err := result.ToString()
+
+	if resjson == "" {
+		fmt.Println("categoryContent返回为空")
+		os.Exit(0)
+	}
+
+	if err != nil {
+		fmt.Println("运行categoryContent后转换string时出错！")
+		fmt.Println(err)
+		os.Exit(0)
+	}
+	page_json := gjson.Get(resjson, "page")
+	fmt.Println("//当前页")
+	fmt.Println("page:" + page_json.String())
+	pagecount_json := gjson.Get(resjson, "pagecount")
+	fmt.Println("//总共多少页")
+	fmt.Println("pagecount_json:" + pagecount_json.String())
+	limit := gjson.Get(resjson, "limit")
+	fmt.Println("//每页多少数据")
+	fmt.Println("limit:" + limit.String())
+	total := gjson.Get(resjson, "total")
+	fmt.Println("//总共多少数据")
+	fmt.Println("total" + total.String())
+	fmt.Println("//视频列表")
+	list := gjson.Get(resjson, "list").Array()
+	var res []string
+	for i := 0; i < len(list); i++ {
+		vod_name := list[i].Get("vod_name").String()
+		vod_id := list[i].Get("vod_id").String()
+		fmt.Println(vod_name + "[" + vod_id + "]")
+		resstr := vod_name + "#" + vod_id
+		res = append(res, resstr)
+
+	}
 
 	return res
+}
+func CheckdetailContent(ids string, vm *otto.Otto) {
+
+	fmt.Print("==========detailContent:=======\n\n")
+	result, err := vm.Run("detailContent(\"" + ids + "\")")
+
+	if err != nil {
+		fmt.Println("运行detailContent时出错！")
+		fmt.Println(err)
+
+		os.Exit(0)
+	}
+	resjson, err := result.ToString()
+
+	if resjson == "" {
+		fmt.Println("detailContent返回为空")
+		os.Exit(0)
+	}
+
+	if err != nil {
+		fmt.Println("运行detailContent后转换string时出错！")
+		fmt.Println(err)
+		os.Exit(0)
+	}
+
+	//	fmt.Println(resjson)
 
 }
 func main() {
-	js := os.Args[1]
-	js_func := ""
-	vm := JsInit()
-	if len(os.Args) > 2 {
-		js_func = os.Args[2]
-		js_func_con, err := ioutil.ReadFile(js_func)
-		if err != nil {
-			fmt.Println("打开文件[ " + js_func + " ]失败！")
-			return
-		}
-		js_func_str := string(js_func_con)
-		jsFunc(js_func_str)
-
-	}
-	js_con, err := ioutil.ReadFile(js)
-	if err != nil {
-		fmt.Println("打开文件[ " + js + " ]失败！")
-		return
-	}
-	js_str := string(js_con)
-	//js初始化
-	_, err = vm.Run(js_str)
-	if err != nil {
-		fmt.Println(err)
-	}
-	CheckHomeContent(vm)
+	//初始化json,vm
+	vm := Jsoninit()
+	//===============HomeContent=================
+	resHomeContent := CheckHomeContent(vm)
+	//测试分类的下标,电影，电视剧.....
+	CheckHomeNum := 1
+	CheckHomeVideoName := gjson.Get(resHomeContent, "class").Array()[CheckHomeNum].Get("type_name").String()
+	CheckHomeVideoId := gjson.Get(resHomeContent, "class").Array()[CheckHomeNum].Get("type_id").String()
+	fmt.Print("你要测试的分类是:" + CheckHomeVideoName + "[" + CheckHomeVideoId + "]\n\n")
+	//===============categoryContent=============
+	//type_id
+	tid := CheckHomeVideoId
+	//页码
+	pg := 1
+	resCategoryContent := CheckCategoryContent(tid, pg, vm)
+	//	fmt.Println(resCategoryContent)
+	//测试视频的下标
+	CategoryNum := 0
+	CategoryName := resCategoryContent[CategoryNum][:strings.Index(resCategoryContent[CategoryNum], "#")]
+	CategoryId := resCategoryContent[CategoryNum][strings.Index(resCategoryContent[CategoryNum], "#")+1:]
+	fmt.Println("\n你要测试的视频是:" + CategoryName + "[" + CategoryId + "]")
+	//===============detailContent=============
+	CheckdetailContent(CategoryId, vm)
 
 }
