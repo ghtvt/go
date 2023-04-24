@@ -85,7 +85,7 @@ function detailContent(ids) {
     vod_play_from_list[i] = sname;
   }
   vod_play_from = vod_play_from_list.join("$$$");
-  console.log(vod_play_from);
+  //  console.log(vod_play_from);
 
   sourceUrl_el = go_FindHtml(body, ".sort-item");
   for (i = 0; i < sourceUrl_el.length; i++) {
@@ -102,12 +102,13 @@ function detailContent(ids) {
   }
   vod_play_url = play_from_array.join("$$$");
 
-  console.log(vod_play_url);
+  //  console.log(vod_play_url);
   //info
   v_info_el = go_FindHtml(body, ".video-info");
   vod_name = go_FindText(v_info_el, ".page-title");
-  vod_pic = go_FindAttr(v_info_el, ".lazyload", "data-src");
-  vod_name = go_FindText(v_info_el, ".tag-link");
+  vod_pic = go_FindAttr(body, ".lazyload", "data-src");
+  //  console.log(vod_pic);
+  var type_name = go_FindText(v_info_el, ".tag-link");
   var vod_year = "年份";
   var vod_year = "年份";
   var vod_area = "地区";
@@ -116,5 +117,34 @@ function detailContent(ids) {
   var vod_director = "导演";
   var vod_content = "简介";
 
-  console.log(vod_name);
+  info.vod_id = ids;
+  info.vod_name = vod_name;
+  info.vod_pic = vod_pic;
+  info.type_name = type_name;
+  info.vod_year = vod_year;
+  info.vod_area = vod_area;
+  info.vod_remarks = vod_remarks;
+  info.vod_actor = vod_actor;
+  info.vod_director = vod_director;
+  info.vod_content = vod_content;
+
+  info.vod_play_from = vod_play_from;
+  info.vod_play_url = vod_play_url;
+
+  list_info.push(info);
+  result.list = list_info;
+
+  //  console.log(JSON.stringify(result));
+  return JSON.stringify(result);
+}
+function playerContent(id) {
+  url = siteUrl + id;
+  res = go_RequestClient(url, "get", getHeaders(), "");
+  body = res.body;
+  playurl = go_FindAttr(body, "#bfurl", "href");
+  var result = {};
+  result.header = "";
+  result.parse = 0;
+  result.playurl = playurl;
+  return JSON.stringify(result);
 }

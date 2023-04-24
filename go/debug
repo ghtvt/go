@@ -332,8 +332,9 @@ func CheckCategoryContent(tid string, pg int, vm *otto.Otto) []string {
 
 	return res
 }
-func CheckdetailContent(ids string, vm *otto.Otto) {
+func CheckdetailContent(ids string, vm *otto.Otto) string {
 
+	res := ""
 	fmt.Print("==========detailContent:=======\n\n")
 	result, err := vm.Run("detailContent(\"" + ids + "\")")
 
@@ -355,17 +356,97 @@ func CheckdetailContent(ids string, vm *otto.Otto) {
 		fmt.Println(err)
 		os.Exit(0)
 	}
+	//	fmt.Println("=====" + resjson)
+	//
+	Video_name := gjson.Get(resjson, "list.0.vod_name").String()
+	Video_Id := gjson.Get(resjson, "list.0.vod_id").String()
+	Video_pic := gjson.Get(resjson, "list.0.vod_pic").String()
+	Video_type_name := gjson.Get(resjson, "list.0.type_name").String()
+	Video_year := gjson.Get(resjson, "list.0.vod_year").String()
+	Video_area := gjson.Get(resjson, "list.0.vod_area").String()
+	Video_remarks := gjson.Get(resjson, "list.0.vod_remarks").String()
+	Video_actor := gjson.Get(resjson, "list.0.vod_actor").String()
+	Video_director := gjson.Get(resjson, "list.0.vod_director").String()
+	Video_content := gjson.Get(resjson, "list.0.vod_content").String()
+	Video_play_from := gjson.Get(resjson, "list.0.vod_play_from").String()
+	Video_play_url := gjson.Get(resjson, "list.0.vod_play_url").String()
+	fmt.Println("视频名:" + Video_name)
+	fmt.Println("视频Id:" + Video_Id)
+	fmt.Println("封面:" + Video_pic)
+	fmt.Println("类型:" + Video_type_name)
+	fmt.Println("年份:" + Video_year)
+	fmt.Println("地区:" + Video_area)
+	fmt.Println("提示信息:" + Video_remarks)
+	fmt.Println("演员:" + Video_actor)
+	fmt.Println("导演:" + Video_director)
+	fmt.Println("简介:" + Video_content)
+	fmt.Println()
+	fmt.Println("播放源:" + strings.ReplaceAll(Video_play_from, "$$$", " "))
+	fmt.Println()
 
-	//	fmt.Println(resjson)
+	play_from := strings.Split(Video_play_from, "$$$")
+	urlstr := strings.Split(Video_play_url, "$$$")
+	for i := 0; i < len(play_from); i++ {
+		urls := strings.Split(urlstr[i], "#")
+		for j := 0; j < len(urls); j++ {
+			if i == 0 && j == 0 {
+				res = urls[j]
+			}
+			u := strings.Split(urls[j], "$")
+			fmt.Println(play_from[i] + "--->" + u[0] + "[" + u[1] + "]")
+		}
+		fmt.Println()
+	}
+	return res
 
+}
+func CheckplayContent(id string, vm *otto.Otto) {
+
+	fmt.Print("==========playerContent:=======\n\n")
+	result, err := vm.Run("playerContent(\"" + id + "\")")
+
+	if err != nil {
+		fmt.Println("运行playerContent时出错！")
+		fmt.Println(err)
+
+		os.Exit(0)
+	}
+	resjson, err := result.ToString()
+
+	if resjson == "" {
+		fmt.Println("playerContent返回为空")
+		os.Exit(0)
+	}
+
+	if err != nil {
+		fmt.Println("运行playerContent后转换string时出错！")
+		fmt.Println(err)
+		os.Exit(0)
+	}
+	fmt.Println(resjson)
+	fmt.Println()
+	//	header := gjson.Get(resjson, "header").String()
+	parse := gjson.Get(resjson, "parse").Int()
+	playurl := gjson.Get(resjson, "playurl").String()
+	//	fmt.Println("请求头:"+header)
+	if parse == 0 {
+		fmt.Println("播放方式--->直连")
+	} else if parse == 1 {
+		fmt.Println("播放方式为--->嗅探")
+	} else {
+		fmt.Println("播放方式为--->解析")
+
+	}
+
+	fmt.Println("播放地址为--->" + playurl)
 }
 func main() {
 	//初始化json,vm
 	vm := Jsoninit()
 	//===============HomeContent=================
 	resHomeContent := CheckHomeContent(vm)
-	//测试分类的下标,电影，电视剧.....
-	CheckHomeNum := 1
+	//测试分类的下标,电影，电视剧.....,可以是0,1,2...
+	CheckHomeNum := 0
 	CheckHomeVideoName := gjson.Get(resHomeContent, "class").Array()[CheckHomeNum].Get("type_name").String()
 	CheckHomeVideoId := gjson.Get(resHomeContent, "class").Array()[CheckHomeNum].Get("type_id").String()
 	fmt.Print("你要测试的分类是:" + CheckHomeVideoName + "[" + CheckHomeVideoId + "]\n\n")
@@ -382,6 +463,10 @@ func main() {
 	CategoryId := resCategoryContent[CategoryNum][strings.Index(resCategoryContent[CategoryNum], "#")+1:]
 	fmt.Println("\n你要测试的视频是:" + CategoryName + "[" + CategoryId + "]")
 	//===============detailContent=============
-	CheckdetailContent(CategoryId, vm)
+	resDetail := CheckdetailContent(CategoryId, vm)
+	rdetail := strings.Split(resDetail, "$")
+	fmt.Println("你要测试的地址是--->" + rdetail[0] + "[" + rdetail[1] + "]")
 
+	//===============playContent=============
+	CheckplayContent(rdetail[1], vm)
 }

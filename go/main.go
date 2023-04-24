@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/asters1/goquery"
 	"github.com/tidwall/gjson"
 )
 
@@ -139,7 +140,75 @@ func JsInit() *otto.Otto {
 
 		return result
 	})
+	vm.Set("go_FindHtml", func(call otto.FunctionCall) otto.Value {
+		HTML, _ := call.Argument(0).ToString()
+		CSS, _ := call.Argument(1).ToString()
 
+		// 加载 HTML document对象
+		doc, err := goquery.NewDocumentFromReader(strings.NewReader(HTML))
+		if err != nil {
+			fmt.Println("加载HTML失败")
+			os.Exit(0)
+		}
+		var res []string
+		// Find the review items
+		doc.Find(CSS).Each(func(i int, s *goquery.Selection) {
+			// For each item found, get the band and title
+			value, err := s.String()
+
+			if err != nil {
+				fmt.Println("获取Html列表出错")
+			}
+
+			res = append(res, value)
+		})
+
+		result, _ := vm.ToValue(res)
+		return result
+	})
+	vm.Set("go_FindText", func(call otto.FunctionCall) otto.Value {
+		HTML, _ := call.Argument(0).ToString()
+		CSS, _ := call.Argument(1).ToString()
+
+		// 加载 HTML document对象
+		doc, err := goquery.NewDocumentFromReader(strings.NewReader(HTML))
+		if err != nil {
+			fmt.Println("加载节点失败")
+			os.Exit(0)
+		}
+		// Find the review items
+		res := doc.Find(CSS).Text()
+		result, _ := vm.ToValue(res)
+		return result
+	})
+	vm.Set("go_FindAttr", func(call otto.FunctionCall) otto.Value {
+		HTML, _ := call.Argument(0).ToString()
+		CSS, _ := call.Argument(1).ToString()
+		KEY, _ := call.Argument(2).ToString()
+
+		// 加载 HTML document对象
+		doc, err := goquery.NewDocumentFromReader(strings.NewReader(HTML))
+		if err != nil {
+			fmt.Println("加载节点失败")
+			os.Exit(0)
+		}
+		// Find the review items
+		// For each item found, get the band and title
+		res := ""
+		bl := true
+		if CSS == "" {
+			res, bl = doc.Attr(KEY)
+
+		} else {
+			res, bl = doc.Find(CSS).Attr(KEY)
+		}
+
+		if !bl {
+			fmt.Println("没有获取到" + KEY)
+		}
+		result, _ := vm.ToValue(res)
+		return result
+	})
 	return vm
 }
 
