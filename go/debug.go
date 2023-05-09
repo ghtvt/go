@@ -116,8 +116,10 @@ func JsInit() *otto.Otto {
 			requset.Header.Set(i, j)
 		}
 		resp, err := client.Do(requset)
+
 		if err != nil {
 			fmt.Println("请求发送失败")
+			fmt.Println(err)
 			os.Exit(0)
 		}
 		body_bit, _ := ioutil.ReadAll(resp.Body)
@@ -141,6 +143,23 @@ func JsInit() *otto.Otto {
 		return result
 	})
 
+	vm.Set("go_FindJsonKey", func(call otto.FunctionCall) otto.Value {
+		JSON, _ := call.Argument(0).ToString()
+		Key, _ := call.Argument(1).ToString()
+		value := gjson.Get(JSON, Key).String()
+		result, _ := vm.ToValue(value)
+		return result
+
+	})
+	//	vm.Set("go_FindJsonKeyArray", func(call otto.FunctionCall) otto.Value {
+	//		JSON, _ := call.Argument(0).ToString()
+	//		Key, _ := call.Argument(1).ToString()
+	//		value := gjson.Get(JSON, Key).Array()
+	//		fmt.Println(value)
+	//		result, _ := vm.ToValue(value)
+	//		return result
+	//
+	//	})
 	vm.Set("go_FindHtml", func(call otto.FunctionCall) otto.Value {
 		HTML, _ := call.Argument(0).ToString()
 		CSS, _ := call.Argument(1).ToString()
@@ -250,7 +269,7 @@ func Jsoninit() *otto.Otto {
 func CheckHomeContent(vm *otto.Otto) string {
 	fmt.Print("==========homeContent:=======\n\n")
 
-	//运行homeContent
+	//	//运行homeContent
 	result, err := vm.Run("homeContent()")
 	if err != nil {
 		fmt.Println("运行homeContent时出错！")
@@ -259,6 +278,12 @@ func CheckHomeContent(vm *otto.Otto) string {
 		os.Exit(0)
 	}
 	resjson, err := result.ToString()
+	if resjson == "undefined" {
+
+		fmt.Println("homeContent返回为undefined,没有返回值")
+		os.Exit(0)
+	}
+	//	fmt.Println("resjson:" + resjson)
 	if resjson == "" {
 		fmt.Println("homeContent返回为空")
 		os.Exit(0)
@@ -295,6 +320,11 @@ func CheckCategoryContent(tid string, pg int, vm *otto.Otto) []string {
 		os.Exit(0)
 	}
 	resjson, err := result.ToString()
+	if resjson == "undefined" {
+
+		fmt.Println("categoryContent返回为undefined,没有返回值")
+		os.Exit(0)
+	}
 
 	if resjson == "" {
 		fmt.Println("categoryContent返回为空")
@@ -346,6 +376,11 @@ func CheckdetailContent(ids string, vm *otto.Otto) string {
 	}
 	resjson, err := result.ToString()
 
+	if resjson == "undefined" {
+
+		fmt.Println("detailContent返回为undefined,没有返回值")
+		os.Exit(0)
+	}
 	if resjson == "" {
 		fmt.Println("detailContent返回为空")
 		os.Exit(0)
@@ -413,6 +448,11 @@ func CheckplayContent(id string, vm *otto.Otto) {
 	}
 	resjson, err := result.ToString()
 
+	if resjson == "undefined" {
+
+		fmt.Println("playerContent返回为undefined,没有返回值")
+		os.Exit(0)
+	}
 	if resjson == "" {
 		fmt.Println("playerContent返回为空")
 		os.Exit(0)
@@ -446,7 +486,8 @@ func main() {
 	//===============HomeContent=================
 	resHomeContent := CheckHomeContent(vm)
 	//测试分类的下标,电影，电视剧.....,可以是0,1,2...
-	CheckHomeNum := 0
+	//	CheckHomeNum := 0
+	CheckHomeNum := 2
 	CheckHomeVideoName := gjson.Get(resHomeContent, "class").Array()[CheckHomeNum].Get("type_name").String()
 	CheckHomeVideoId := gjson.Get(resHomeContent, "class").Array()[CheckHomeNum].Get("type_id").String()
 	fmt.Print("你要测试的分类是:" + CheckHomeVideoName + "[" + CheckHomeVideoId + "]\n\n")
@@ -458,7 +499,7 @@ func main() {
 	resCategoryContent := CheckCategoryContent(tid, pg, vm)
 	//	fmt.Println(resCategoryContent)
 	//测试视频的下标
-	CategoryNum := 0
+	CategoryNum := 5
 	CategoryName := resCategoryContent[CategoryNum][:strings.Index(resCategoryContent[CategoryNum], "#")]
 	CategoryId := resCategoryContent[CategoryNum][strings.Index(resCategoryContent[CategoryNum], "#")+1:]
 	fmt.Println("\n你要测试的视频是:" + CategoryName + "[" + CategoryId + "]")

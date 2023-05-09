@@ -1,4 +1,4 @@
 #!/bin/bash
 
 go build -o . 
-./js Xinsj.js
+./js Kunyu77.js
